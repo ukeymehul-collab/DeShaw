@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Alpha Horizon Fund — AI Fund Console</title>
+<style>
+  :root{
+    --navy:#0f2a55;
+    --blue:#1d4ed8;
+    --blue-dark:#1e3a8a;
+    --blue-light:#eaf1fb;
+    --bg:#eef1f6;
+    --card:#ffffff;
+    --border:#e3e8f0;
+    --text:#0f2a55;
+    --muted:#64748b;
+    --green:#16a34a;
+    --green-bg:#dcfce7;
+    --amber:#d97706;
+    --amber-bg:#fef3c7;
+    --red:#dc2626;
+    --red-bg:#fee2e2;
+    --radius:12px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);}
+  a{text-decoration:none;color:inherit;}
+  .app{display:flex;align-items:stretch;min-height:100vh;}
+  /* SIDEBAR: outer track stretches to the full height of the page content
+     (so its white background never runs out before the bottom of the page),
+     inner wrapper sticks to the viewport so the nav + profile section stay
+     in the same visual position they always were, even on tall/scrollable screens. */
+  #sidebar-slot{flex-shrink:0;align-self:stretch;}
+  .sidebar{width:230px;height:100%;background:#fff;border-right:1px solid var(--border);}
+  .sidebar-inner{position:sticky;top:0;height:100vh;padding:24px 18px;display:flex;flex-direction:column;overflow:hidden;}
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);}
+  .brand svg{flex-shrink:0;}
+  .brand-name{font-weight:700;font-size:15px;color:var(--navy);}
+  .brand-sub{font-size:11px;color:var(--muted);}
+  .nav{list-style:none;padding:0;margin:0;flex:1;}
+  .nav li{margin-bottom:2px;}
+  .nav a{display:flex;align-items:center;gap:10px;padding:10px 10px;border-radius:8px;font-size:14px;color:#334155;font-weight:500;cursor:pointer;}
+  .nav a:hover{background:#f1f5f9;}
+  .nav a.active{background:var(--blue-light);color:var(--blue);font-weight:600;}
+  .nav .icon{width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:14px;}
+  .sidebar-footer{font-size:12px;color:var(--muted);border-top:1px solid var(--border);padding-top:14px;}
+  .sidebar-footer strong{display:block;color:var(--text);font-size:13px;}
+
+  /* MAIN */
+  .main{flex:1;padding:28px 36px;min-width:0;}
+  .screen{display:none;animation:fadeIn .25s ease;}
+  .screen.visible{display:block;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+  .topbar{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:22px;flex-wrap:wrap;gap:12px;}
+  .title{font-size:26px;font-weight:700;color:var(--navy);margin:0 0 4px;}
+  .subtitle{font-size:13px;color:var(--muted);margin:0;}
+  .badges{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;}
+  .badge{font-size:12px;padding:4px 10px;border-radius:20px;background:#f1f5f9;color:#334155;display:inline-flex;align-items:center;gap:6px;font-weight:500;}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;}
+  .badge.green{background:var(--green-bg);color:#15803d;}
+  .badge.blue{background:var(--blue-light);color:var(--blue);}
+  .topbar-actions{display:flex;gap:10px;}
+
+  .btn{border:none;border-radius:8px;padding:10px 18px;font-size:14px;font-weight:600;cursor:pointer;transition:transform .1s, box-shadow .15s;}
+  .btn:hover{transform:translateY(-1px);}
+  .btn-primary{background:var(--blue-dark);color:#fff;}
+  .btn-primary:hover{box-shadow:0 4px 12px rgba(29,78,216,.35);}
+  .btn-outline{background:#fff;border:1px solid var(--border);color:var(--navy);}
+  .btn-danger-outline{background:#fff;border:1px solid #f3b4b4;color:var(--red);}
+  .btn-danger{background:var(--red);color:#fff;}
+  .btn-green{background:var(--green);color:#fff;}
+  .btn-block{width:100%;}
+  .btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+
+  .kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:22px;}
+  .kpi-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;}
+  .kpi-card .kpi-value{font-size:22px;font-weight:700;color:var(--navy);}
+  .kpi-card .kpi-label{font-size:12.5px;color:var(--muted);margin-top:2px;}
+  .kpi-card.alert .kpi-value{color:var(--red);}
+  .kpi-card.alert{background:var(--red-bg);border-color:#f3c1c1;}
+  .kpi-card.alert .kpi-label{color:#b91c1c;}
+
+  .grid-2{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:20px;}
+  .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;}
+  .card h3{margin:0 0 14px;font-size:16px;color:var(--navy);}
+  .card h4{margin:0 0 4px;font-size:13px;color:var(--muted);font-weight:600;}
+
+  .stat-row{display:flex;justify-content:space-between;margin-bottom:4px;font-size:13px;}
+  .stat-row .val{font-weight:700;color:var(--navy);}
+
+  .bar-track{height:8px;border-radius:6px;background:#e2e8f0;overflow:hidden;margin:6px 0 2px;position:relative;}
+  .bar-fill{height:100%;border-radius:6px;}
+  .bar-fill.green{background:var(--green);}
+  .bar-fill.amber{background:var(--amber);}
+  .bar-fill.red{background:var(--red);}
+  .bar-caption{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);}
+
+  .stage-track{display:flex;align-items:center;justify-content:space-between;margin:20px 0;position:relative;}
+  .stage-track::before{content:"";position:absolute;top:9px;left:20px;right:20px;height:2px;background:#e2e8f0;z-index:0;}
+  .stage{display:flex;flex-direction:column;align-items:center;gap:6px;z-index:1;background:transparent;font-size:12px;color:var(--muted);}
+  .stage .node{width:20px;height:20px;border-radius:50%;background:#e2e8f0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700;}
+  .stage.done .node{background:var(--green);}
+  .stage.done{color:var(--green);font-weight:600;}
+  .stage.current .node{background:var(--amber);}
+  .stage.current{color:var(--amber);font-weight:600;}
+
+  .pill{display:inline-block;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;}
+  .pill.green{background:var(--green-bg);color:#15803d;}
+  .pill.amber{background:var(--amber-bg);color:#b45309;}
+  .pill.red{background:var(--red-bg);color:#b91c1c;}
+  .pill.blue{background:var(--blue-light);color:var(--blue);}
+  .pill.gray{background:#f1f5f9;color:#475569;}
+
+  .list-clean{list-style:none;padding:0;margin:0;}
+  .list-clean li{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #f1f5f9;font-size:13.5px;}
+  .list-clean li:last-child{border-bottom:none;}
+
+  .evidence-row{display:flex;align-items:center;gap:8px;padding:7px 0;font-size:13.5px;justify-content:space-between;border-bottom:1px solid #f1f5f9;}
+  .evidence-row:last-child{border-bottom:none;}
+  .evidence-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+
+  .banner{border-radius:var(--radius);padding:18px 20px;}
+  .banner.red{background:var(--red-bg);border:1px solid #f3c1c1;}
+  .banner.green{background:var(--green-bg);border:1px solid #b6e6c2;}
+  .banner.amber{background:var(--amber-bg);border:1px solid #f4dba3;}
+  .banner h3{margin:0 0 8px;}
+  .banner.red h3{color:#b91c1c;}
+  .banner.green h3{color:#15803d;}
+
+  .flex-between{display:flex;justify-content:space-between;align-items:center;}
+  .muted{color:var(--muted);}
+  .mt8{margin-top:8px;}
+  .mt16{margin-top:16px;}
+  .mb0{margin-bottom:0;}
+
+  /* modal */
+  .modal-overlay{position:fixed;inset:0;background:rgba(15,42,85,.45);display:none;align-items:center;justify-content:center;z-index:100;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:#fff;border-radius:14px;padding:26px 28px;width:420px;box-shadow:0 20px 50px rgba(0,0,0,.25);}
+  .modal h2{margin:0 0 10px;font-size:18px;color:var(--navy);}
+  .modal p{margin:0 0 16px;font-size:13.5px;color:#475569;line-height:1.5;}
+  .modal .reason-box{background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px;color:#334155;margin-bottom:18px;}
+  .modal-actions{display:flex;justify-content:flex-end;gap:10px;}
+
+  /* toast */
+  .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--navy);color:#fff;padding:14px 22px;border-radius:10px;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:all .25s ease;z-index:200;text-align:center;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .toast .t1{font-weight:700;}
+  .toast .t2{font-size:12.5px;opacity:.85;margin-top:2px;}
+
+  .batches{display:flex;gap:8px;margin-bottom:16px;}
+  .batch-chip{flex:1;text-align:center;padding:10px;border-radius:8px;background:#e2e8f0;color:#475569;font-weight:600;font-size:13px;transition:all .3s;}
+  .batch-chip.done{background:var(--green);color:#fff;}
+
+  .chips-wrap{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;}
+  .chip{background:var(--green-bg);color:#15803d;padding:8px 14px;border-radius:20px;font-size:13px;font-weight:600;opacity:0;transform:translateY(6px);transition:all .3s;}
+  .chip.show{opacity:1;transform:translateY(0);}
+
+  .flow-node{display:flex;align-items:center;justify-content:space-between;background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:13px;font-weight:600;margin-bottom:8px;color:#334155;}
+  .flow-arrow{text-align:center;color:var(--muted);font-size:16px;margin:2px 0;}
+  .flow-status{font-size:12px;font-weight:700;color:var(--muted);}
+  .flow-status.done{color:var(--green);}
+
+  .clickable{cursor:pointer;}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div id="sidebar-slot"></div>
+  <div class="main" id="main-slot">
+
+    <!-- ============ SCREEN 1: FUND OVERVIEW ============ -->
+    <section class="screen" id="screen-overview">
+      <div class="topbar">
+        <div>
+          <h1 class="title">Alpha Horizon Fund</h1>
+          <div class="badges">
+            <span class="badge green"><span class="dot"></span>Fund Active</span>
+            <span class="badge blue"><span class="dot" style="background:#1d4ed8"></span>Market Open</span>
+            <span class="badge">Updated 2 min ago</span>
+            <span class="badge green">System Healthy</span>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn btn-danger-outline">Pause Fund</button>
+          <button class="btn btn-outline" onclick="go('governance')">View Governance</button>
+        </div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-value">₹1,000 Cr</div><div class="kpi-label">Fund Value</div></div>
+        <div class="kpi-card"><div class="kpi-value">+1.2%</div><div class="kpi-label">Today's Return</div></div>
+        <div class="kpi-card"><div class="kpi-value">+14.8%</div><div class="kpi-label">Total Return</div></div>
+        <div class="kpi-card"><div class="kpi-value">Moderate</div><div class="kpi-label">Overall Risk Level</div></div>
+        <div class="kpi-card alert"><div class="kpi-value">1</div><div class="kpi-label">Critical Alerts — Needs review today</div></div>
+      </div>
+
+      <div class="card mt16" style="margin-bottom:20px;">
+        <h3>Fund Performance <span class="muted" style="font-weight:400;font-size:12.5px;">— Portfolio performance vs. benchmark</span></h3>
+        <svg viewBox="0 0 1000 220" width="100%" height="180" preserveAspectRatio="none">
+          <polyline points="0,190 150,150 300,160 450,110 600,90 750,60 850,40 1000,20" fill="none" stroke="#1d4ed8" stroke-width="3"/>
+          <polyline points="0,195 150,175 300,170 450,150 600,140 750,120 850,110 1000,95" fill="none" stroke="#94a3b8" stroke-width="2" stroke-dasharray="6,5"/>
+        </svg>
+        <div class="grid-3" style="margin-top:10px;margin-bottom:0;">
+          <div><div class="muted" style="font-size:12px;">Fund</div><div style="font-weight:700;color:var(--green);">+14.8%</div></div>
+          <div><div class="muted" style="font-size:12px;">Benchmark</div><div style="font-weight:700;">+10.4%</div></div>
+          <div><div class="muted" style="font-size:12px;">Outperformance</div><div style="font-weight:700;color:var(--green);">+4.4%</div></div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3>Portfolio Exposure — Sector allocation</h3>
+          <ul class="list-clean">
+            <li>AI <span class="val">22%</span></li>
+            <li>Semiconductors <span class="val">18%</span></li>
+            <li>Cloud <span class="val">15%</span></li>
+            <li>Software <span class="val">20%</span></li>
+            <li>Cybersecurity <span class="val">10%</span></li>
+            <li>Cash / Other <span class="val">15%</span></li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Risk limit proximity</h3>
+          <div class="stat-row"><span>Largest company position</span><span class="val">5.5% / 6%</span></div>
+          <div class="bar-track"><div class="bar-fill amber" style="width:92%"></div></div>
+          <div class="stat-row mt8"><span>Tech subsector exposure</span><span class="val">18% / 25%</span></div>
+          <div class="bar-track"><div class="bar-fill green" style="width:72%"></div></div>
+          <div class="stat-row mt8"><span>Cash reserve</span><span class="val">7% / 5% min</span></div>
+          <div class="bar-track"><div class="bar-fill green" style="width:70%"></div></div>
+        </div>
+      </div>
+
+      <h3 style="margin:0 0 12px;">Team & Agent Activity</h3>
+      <div class="grid-3" style="grid-template-columns:repeat(5,1fr);margin-bottom:20px;">
+        <div class="card">
+          <div class="flex-between"><strong style="font-size:14px;">Research</strong><span class="pill green">Active</span></div>
+          <p class="muted" style="font-size:12.5px;margin:8px 0;">Monitoring 18 companies</p>
+          <div class="stat-row"><span>Active items</span><span class="val">5</span></div>
+          <div class="stat-row"><span>Alerts</span><span class="val">0</span></div>
+        </div>
+        <div class="card">
+          <div class="flex-between"><strong style="font-size:14px;">Portfolio</strong><span class="pill green">Active</span></div>
+          <p class="muted" style="font-size:12.5px;margin:8px 0;">Evaluating NovaChip allocation</p>
+          <div class="stat-row"><span>Active items</span><span class="val">2</span></div>
+          <div class="stat-row"><span>Alerts</span><span class="val">0</span></div>
+        </div>
+        <div class="card" style="border-color:#f4dba3;">
+          <div class="flex-between"><strong style="font-size:14px;">Risk</strong><span class="pill green">Active</span></div>
+          <p class="muted" style="font-size:12.5px;margin:8px 0;">Reviewing NovaChip concentration</p>
+          <div class="stat-row"><span>Alerts</span><span class="pill amber" style="padding:2px 8px;">1 Caution</span></div>
+          <div class="pill red mt8" style="width:100%;text-align:center;">Manager: Intervention Required</div>
+        </div>
+        <div class="card">
+          <div class="flex-between"><strong style="font-size:14px;">Trading</strong><span class="pill green">Active</span></div>
+          <p class="muted" style="font-size:12.5px;margin:8px 0;">Executing 2 orders</p>
+          <div class="stat-row"><span>Active items</span><span class="val">2</span></div>
+        </div>
+        <div class="card">
+          <div class="flex-between"><strong style="font-size:14px;">Operations</strong><span class="pill green">Active</span></div>
+          <p class="muted" style="font-size:12.5px;margin:8px 0;">Reconciling 1 completed trade</p>
+          <div class="stat-row"><span>Active items</span><span class="val">1</span></div>
+        </div>
+      </div>
+
+      <h3 style="margin:0 0 12px;">Active Decisions <span class="muted" style="font-weight:400;font-size:12.5px;">— Cross-agent workflows in progress</span></h3>
+      <div class="grid-2" style="margin-bottom:20px;">
+        <div class="card">
+          <div class="flex-between"><strong>NovaChip Investment</strong><span style="color:var(--amber);font-weight:700;">5.5% proposed</span></div>
+          <div class="stage-track">
+            <div class="stage done"><div class="node">✓</div>Research</div>
+            <div class="stage done"><div class="node">✓</div>Portfolio</div>
+            <div class="stage current"><div class="node">!</div>Risk</div>
+            <div class="stage"><div class="node">–</div>Trading</div>
+            <div class="stage"><div class="node">–</div>Operations</div>
+          </div>
+          <div class="flex-between" style="background:#fef3c7;padding:8px 12px;border-radius:8px;">
+            <span style="font-size:13px;color:#b45309;font-weight:600;">Risk Manager reviewing caution alert</span>
+            <span style="font-size:13px;color:var(--blue);font-weight:600;cursor:pointer;" onclick="go('research')">View Decision →</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="flex-between"><strong>CloudSphere Investment</strong><span style="color:var(--blue);font-weight:700;">2% proposed</span></div>
+          <div class="stage-track">
+            <div class="stage done"><div class="node">✓</div>Research</div>
+            <div class="stage done"><div class="node">✓</div>Portfolio</div>
+            <div class="stage done"><div class="node">✓</div>Risk</div>
+            <div class="stage current"><div class="node">●</div>Trading</div>
+            <div class="stage"><div class="node">–</div>Operations</div>
+          </div>
+          <div class="flex-between" style="background:var(--blue-light);padding:8px 12px;border-radius:8px;">
+            <span style="font-size:13px;color:var(--blue);font-weight:600;">Trade execution in progress</span>
+            <span style="font-size:13px;color:var(--blue);font-weight:600;">View Decision →</span>
+          </div>
+        </div>
+      </div>
+
+      <h3 style="margin:0 0 12px;">Recent Activity</h3>
+      <div class="card">
+        <ul class="list-clean">
+          <li><span><span class="dot" style="background:var(--red);margin-right:8px;"></span>14:32 — Risk Manager blocked NovaChip proposal</span></li>
+          <li><span><span class="dot" style="background:var(--amber);margin-right:8px;"></span>14:15 — Risk Agent raised concentration caution</span></li>
+          <li><span><span class="dot" style="background:var(--blue);margin-right:8px;"></span>13:58 — Portfolio Agent proposed 5.5% allocation</span></li>
+          <li><span><span class="dot" style="background:var(--blue);margin-right:8px;"></span>13:31 — Research Agent recommended NovaChip</span></li>
+          <li><span><span class="dot" style="background:var(--green);margin-right:8px;"></span>12:45 — CloudSphere trade settled</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ============ SCREEN 2: GOVERNANCE ============ -->
+    <section class="screen" id="screen-governance">
+      <div class="topbar">
+        <div>
+          <h1 class="title">Alpha Horizon Fund</h1>
+          <p class="subtitle">Humans define the boundaries. AI operates independently within them.</p>
+        </div>
+        <div class="topbar-actions" style="align-items:center;">
+          <span class="badge">Draft — Not launched</span>
+          <button class="btn btn-outline">Save draft</button>
+          <button class="btn btn-primary" onclick="openLaunchModal()">Review &amp; launch</button>
+        </div>
+      </div>
+
+      <div class="card mt16" style="margin-bottom:18px;">
+        <h3>1&nbsp;&nbsp;Fund goal &amp; strategy</h3>
+        <div class="grid-3" style="margin-bottom:10px;">
+          <div><h4>Fund objective</h4><strong>Capital growth</strong></div>
+          <div><h4>Target return</h4><strong>12–15% annually</strong></div>
+          <div><h4>Risk appetite</h4><strong>Moderate</strong></div>
+        </div>
+        <div class="grid-3" style="margin-bottom:0;">
+          <div><h4>Investment horizon</h4><strong>3–5 years</strong></div>
+          <div><h4>Geography</h4><strong>US Markets</strong></div>
+          <div><h4>Asset class</h4><strong>Equities</strong></div>
+        </div>
+      </div>
+
+      <div class="card mt16" style="margin-bottom:18px;">
+        <h3>2&nbsp;&nbsp;Portfolio &amp; risk limits</h3>
+        <div class="flex-between"><h4 class="mb0">Maximum single company concentration</h4><strong>6.0%</strong></div>
+        <div class="bar-track" style="height:10px;"><div class="bar-fill green" style="width:90%;display:inline-block;"></div><div class="bar-fill amber" style="width:5%;display:inline-block;"></div><div class="bar-fill red" style="width:5%;display:inline-block;"></div></div>
+        <p class="muted" style="font-size:12px;margin:10px 0 0;">Hard limit — Risk Agent blocks any proposal that would cross it, regardless of manager review.</p>
+        <div class="grid-3" style="margin-top:18px;margin-bottom:0;">
+          <div>
+            <h4>Max tech subsector exposure</h4><strong>25%</strong>
+            <div class="bar-track"><div class="bar-fill green" style="width:50%"></div></div>
+          </div>
+          <div>
+            <h4>Minimum cash reserve</h4><strong>5%</strong>
+            <div class="bar-track"><div class="bar-fill green" style="width:25%"></div></div>
+          </div>
+          <div>
+            <h4>Max autonomous new position</h4><strong>1–4%</strong>
+            <div class="bar-track"><div class="bar-fill amber" style="width:40%"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mt16" style="margin-bottom:18px;">
+        <h3>3&nbsp;&nbsp;Agent autonomy — what each agent may decide alone, what needs a manager, what it can never do</h3>
+        <div class="grid-3">
+          <div class="card" style="box-shadow:none;">
+            <strong>Research Agent</strong><br><span class="muted" style="font-size:12px;">Research &amp; Analysis</span>
+            <p style="font-size:12.5px;margin:10px 0 4px;color:var(--green);font-weight:600;">✓ Can do independently</p>
+            <p style="font-size:12px;color:#475569;margin:0;">Scan news, analyze fundamentals, generate theses with confidence scores.</p>
+          </div>
+          <div class="card" style="box-shadow:none;">
+            <strong>Portfolio Agent</strong><br><span class="muted" style="font-size:12px;">Portfolio Construction</span>
+            <p style="font-size:12.5px;margin:10px 0 4px;color:var(--green);font-weight:600;">✓ Can do independently</p>
+            <p style="font-size:12px;color:#475569;margin:0;">Propose positions under 1% autonomously; 1–4% requires manager review; may never exceed 6%.</p>
+          </div>
+          <div class="card" style="box-shadow:none;">
+            <strong>Risk Agent</strong><br><span class="muted" style="font-size:12px;">Risk Monitoring</span>
+            <p style="font-size:12.5px;margin:10px 0 4px;color:var(--green);font-weight:600;">✓ Can do independently</p>
+            <p style="font-size:12px;color:#475569;margin:0;">Monitor concentrations, run stress tests, flag policy breaches, block hard-limit violations.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mt16" style="margin-bottom:18px;">
+        <h3>4&nbsp;&nbsp;Human authority &amp; escalation</h3>
+        <ul class="list-clean">
+          <li>Portfolio allocation crosses approval threshold — Portfolio Manager <span class="pill amber">Approval required</span></li>
+          <li>Company concentration enters caution zone — Risk Manager <span class="pill amber">Caution alert</span></li>
+          <li>Portfolio vs. Risk agent conflict — Risk Manager <span class="pill blue">Escalation</span></li>
+          <li>Hard risk limit exceeded — Risk Manager <span class="pill red">Automatically blocked</span></li>
+        </ul>
+      </div>
+
+      <div class="grid-2" style="grid-template-columns:1fr 1fr;">
+        <div class="card">
+          <h3>6&nbsp;&nbsp;Launch readiness</h3>
+          <ul class="list-clean">
+            <li>Fund goal defined <span style="color:var(--green);">✓</span></li>
+            <li>Strategy configured <span style="color:var(--green);">✓</span></li>
+            <li>Risk limits configured <span style="color:var(--green);">✓</span></li>
+            <li>Managers assigned <span style="color:var(--green);">✓</span></li>
+            <li>Escalation rules configured <span style="color:var(--green);">✓</span></li>
+            <li>Prohibited actions configured <span style="color:var(--green);">✓</span></li>
+          </ul>
+          <p class="mt8" style="font-weight:700;color:var(--green);">7/7 Governance setup ready</p>
+        </div>
+        <div class="card" style="display:flex;flex-direction:column;justify-content:space-between;">
+          <div>
+            <h3>7&nbsp;&nbsp;Launch</h3>
+            <p style="font-size:13.5px;color:#475569;">Once launched, all five agent teams begin operating live within the boundaries configured above. You can still adjust limits and autonomy at any time from Governance.</p>
+          </div>
+          <button class="btn btn-primary btn-block" onclick="openLaunchModal()">Launch fund</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SCREEN 3: RESEARCH TEAM ============ -->
+    <section class="screen" id="screen-research">
+      <div class="topbar">
+        <div>
+          <h1 class="title">Research Team</h1>
+          <span class="pill green">Status : Ready for Portfolio</span>
+        </div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-value">18</div><div class="kpi-label">Companies Monitored</div></div>
+        <div class="kpi-card"><div class="kpi-value">4</div><div class="kpi-label">New Opportunities</div></div>
+        <div class="kpi-card"><div class="kpi-value">2</div><div class="kpi-label">High-Confidence Ideas</div></div>
+        <div class="kpi-card"><div class="kpi-value">1</div><div class="kpi-label">Needs Review</div></div>
+        <div class="kpi-card"><div class="kpi-value">1</div><div class="kpi-label">Research Alerts</div></div>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <h3>Opportunity Pipeline</h3>
+          <div class="stage-track" style="margin-bottom:24px;">
+            <div class="stage done"><div class="node">✓</div>Scanning</div>
+            <div class="stage done"><div class="node">✓</div>Analysing</div>
+            <div class="stage current"><div class="node">●</div>Opportunity Found</div>
+            <div class="stage"><div class="node">–</div>Sent To Portfolio</div>
+          </div>
+
+          <div class="card" style="margin-bottom:14px;">
+            <div class="flex-between"><strong style="font-size:16px;">NovaChip Technologies</strong><span class="pill blue">Buy</span></div>
+            <div class="pill blue mt8">Opportunity Found — Ready for Portfolio</div>
+            <p style="font-size:13px;color:var(--blue);margin:8px 0 0;">↑ Strengthening signal, high analyst attention</p>
+            <div class="flex-between mt8"><span></span><strong style="font-size:20px;color:var(--blue);">82%</strong></div>
+          </div>
+          <div class="card" style="margin-bottom:14px;">
+            <div class="flex-between"><strong style="font-size:16px;">CloudSphere</strong><span class="pill blue">Buy</span></div>
+            <div class="pill blue mt8">Sent to Portfolio</div>
+            <p style="font-size:13px;color:var(--blue);margin:8px 0 0;">↑ Steady, awaiting Portfolio execution</p>
+            <div class="flex-between mt8"><span></span><strong style="font-size:20px;color:var(--blue);">76%</strong></div>
+          </div>
+          <div class="card">
+            <div class="flex-between"><strong style="font-size:16px;">QuantumSoft</strong><span class="pill gray">Watch</span></div>
+            <div class="pill gray mt8">Analysing</div>
+            <p style="font-size:13px;color:var(--amber);margin:8px 0 0;">↓ Confidence reduced this week</p>
+            <div class="flex-between mt8"><span></span><strong style="font-size:20px;color:var(--blue);">61%</strong></div>
+          </div>
+        </div>
+
+        <div>
+          <h3>Nova Chip Technologies</h3>
+          <div class="card" style="margin-bottom:14px;">
+            <div class="flex-between mb0"><span></span><span class="pill green">Status : Ready for Portfolio</span></div>
+            <div class="grid-3" style="grid-template-columns:1fr 1fr;margin-top:10px;margin-bottom:0;">
+              <div><h4>Recommendation</h4><strong style="color:var(--blue);">Buy</strong></div>
+              <div><h4>Confidence</h4><strong style="color:var(--blue);">Buy</strong></div>
+              <div><h4>Expected Return</h4><strong>+18%</strong></div>
+              <div><h4>Time Horizon</h4><strong>12-18 Months</strong></div>
+            </div>
+          </div>
+          <div class="card" style="margin-bottom:14px;">
+            <h4>Investment Thesis</h4>
+            <p style="font-size:13px;color:#475569;line-height:1.5;">NovaChip's shipment volumes and design-win pipeline point to sustained AI-accelerator demand into 2027, with margins expanding for three straight quarters.</p>
+          </div>
+          <div class="card" style="margin-bottom:14px;">
+            <h4 class="mb0">Key Evidence</h4>
+            <div class="evidence-row"><span>Revenue Growth</span><span style="color:var(--green);font-weight:600;">+24% YoY</span></div>
+            <div class="evidence-row"><span>Margin Improvement</span><span style="color:var(--green);font-weight:600;">+180 bps</span></div>
+            <div class="evidence-row"><span>AI-Chip Demand</span><span style="color:var(--green);font-weight:600;">Strong backlog growing</span></div>
+            <div class="evidence-row"><span>Competitive Position</span><span style="font-weight:600;">Stable, gaining share</span></div>
+            <div class="evidence-row"><span>Important News</span><span style="color:var(--amber);font-weight:600;">Export rule under review</span></div>
+          </div>
+          <div class="card" style="margin-bottom:14px;">
+            <div class="flex-between"><h4 class="mb0">Confidence &amp; Evidence Quality</h4><strong style="font-size:20px;color:var(--blue);">82%</strong></div>
+            <ul class="list-clean mt8">
+              <li>Supporting Sources <span class="val">14</span></li>
+              <li>Conflicting Signals <span class="val">1</span></li>
+              <li>Last updated <span class="val">20 min ago</span></li>
+            </ul>
+          </div>
+          <button class="btn btn-primary btn-block" onclick="sendToPortfolio()">Send To Portfolio</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SCREEN 4: PORTFOLIO TEAM — 5.5% PROPOSAL ============ -->
+    <section class="screen" id="screen-portfolio1">
+      <div class="topbar">
+        <div>
+          <h1 class="title">Portfolio Team</h1>
+          <span class="pill green">Portfolio agent : active</span>
+        </div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-value">1,000 cr</div><div class="kpi-label">Portfolio View</div></div>
+        <div class="kpi-card"><div class="kpi-value">70 cr</div><div class="kpi-label">Cash Available</div></div>
+        <div class="kpi-card"><div class="kpi-value">36</div><div class="kpi-label">Active Positions</div></div>
+        <div class="kpi-card"><div class="kpi-value">2</div><div class="kpi-label">New Proposals</div></div>
+        <div class="kpi-card"><div class="kpi-value">68%</div><div class="kpi-label">Tech Exposure</div></div>
+      </div>
+
+      <div class="grid-3" style="grid-template-columns:1.1fr 1.4fr 1fr;">
+        <div>
+          <div class="card" style="margin-bottom:16px;">
+            <h3>Portfolio Allocation</h3>
+            <ul class="list-clean">
+              <li>AI <span class="val">22%</span></li>
+              <li>Semiconductors <span class="val">18%</span></li>
+              <li>Software <span class="val">20%</span></li>
+              <li>Cloud <span class="val">25%</span></li>
+              <li>Cash <span class="val">15%</span></li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Risk Limit Proximity</h3>
+            <div class="stat-row"><span>Largest Position</span><span class="val">5.5% / 6%</span></div>
+            <div class="bar-track"><div class="bar-fill amber" style="width:92%"></div></div>
+            <div class="stat-row mt8"><span>Tech Subsector Exposure</span><span class="val">18% / 25%</span></div>
+            <div class="bar-track"><div class="bar-fill green" style="width:72%"></div></div>
+            <div class="stat-row mt8"><span>Cash Reserve</span><span class="val">7% / 5% Min</span></div>
+            <div class="bar-track"><div class="bar-fill green" style="width:70%"></div></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="card" style="margin-bottom:16px;">
+            <h3>Active Proposal — NovaChip Technologies</h3>
+            <div class="grid-3" style="margin-bottom:0;">
+              <div><h4>Research Recommendation</h4><strong style="color:var(--blue);">Buy</strong></div>
+              <div><h4>Propose Allocation</h4><strong style="color:var(--blue);">5.5%</strong></div>
+              <div><h4>Expected Return</h4><strong>+18%</strong></div>
+              <div><h4>Research Confidence</h4><strong>82%</strong></div>
+              <div><h4>Current Stage</h4><span class="pill amber">Risk Review</span></div>
+            </div>
+            <div class="stage-track" style="margin-bottom:0;">
+              <div class="stage done"><div class="node">✓</div>Research</div>
+              <div class="stage done"><div class="node">✓</div>Portfolio</div>
+              <div class="stage current"><div class="node">!</div>Risk</div>
+              <div class="stage"><div class="node">–</div>Trading</div>
+              <div class="stage"><div class="node">–</div>Operation</div>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Risk Limit Proximity</h3>
+            <div class="stat-row"><span>Largest Position</span><span class="val">0% - 5.5%</span></div>
+            <div class="bar-track"><div class="bar-fill amber" style="width:92%"></div></div>
+            <div class="bar-caption"><span></span><span>6% Hard Limit</span></div>
+            <div class="stat-row mt8"><span>Tech Subsector Exposure</span><span class="val">14% / 19.5%</span></div>
+            <div class="bar-track"><div class="bar-fill green" style="width:72%"></div></div>
+            <div class="stat-row mt8"><span>Cash Reserve</span><span class="val">7% - 1.5%</span></div>
+            <div class="bar-track"><div class="bar-fill red" style="width:30%"></div></div>
+            <div class="bar-caption"><span>5% Minimum Reserve</span><span></span></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="card" style="margin-bottom:16px;">
+            <h3 style="margin-bottom:10px;">Proposal Status</h3>
+            <p class="muted" style="font-size:12.5px;">Proposal is within Portfolio Agent's permitted autonomy band (1–4% requires manager review). No manager sign-off is required for this step.</p>
+            <div class="pill green mt8" style="display:block;text-align:center;">No human approval required</div>
+          </div>
+          <div class="card" style="margin-bottom:16px;">
+            <h3>Risk Manager Blocked Proposal</h3>
+            <div class="pill gray" style="display:block;text-align:center;">No Risk Detected</div>
+          </div>
+          <div class="card" style="margin-bottom:16px;">
+            <h3>Revised Proposal</h3>
+            <div class="pill gray" style="display:block;text-align:center;">No Revised Proposal</div>
+          </div>
+          <button class="btn btn-primary btn-block" onclick="sendToRisk()">Send to Risk</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SCREEN 5 / 5B: RISK TEAM (shared template) ============ -->
+    <section class="screen" id="screen-risk">
+      <div class="topbar">
+        <div>
+          <h1 class="title">Risk Team</h1>
+          <span class="pill green">Risk agent : active</span>
+        </div>
+      </div>
+
+      <div class="kpi-grid" id="risk-kpis"></div>
+
+      <div class="grid-2">
+        <div>
+          <div class="card" style="margin-bottom:16px;">
+            <h3>Risk Exposure Overview</h3>
+            <h4>Risk Limit Proximity</h4>
+            <div class="stat-row"><span>Largest Position</span><span class="val" id="risk-largest-val">5.5% / 6%</span></div>
+            <div class="bar-track"><div class="bar-fill" id="risk-largest-bar" style="width:92%"></div></div>
+            <div class="bar-caption"><span></span><span>Hard Limit</span></div>
+            <div class="stat-row mt8"><span>Tech Subsector Exposure</span><span class="val" id="risk-tech-val">19.5% / 25%</span></div>
+            <div class="bar-track"><div class="bar-fill green" id="risk-tech-bar" style="width:78%"></div></div>
+            <div class="stat-row mt8"><span>Cash Reserve</span><span class="val" id="risk-cash-val">1.5% / 5%</span></div>
+            <div class="bar-track"><div class="bar-fill red" id="risk-cash-bar" style="width:30%"></div></div>
+          </div>
+
+          <h3>Active Risk Review</h3>
+          <div class="card">
+            <h4 class="mb0">Key Evidence</h4>
+            <div id="risk-key-evidence"></div>
+          </div>
+        </div>
+
+        <div>
+          <h3 id="risk-panel-title">Caution — Company Concentration Near Limit</h3>
+          <div class="card" style="margin-bottom:16px;">
+            <div class="grid-3" style="grid-template-columns:repeat(5,1fr);margin-bottom:14px;">
+              <div><h4>Proposed Position</h4><strong id="risk-proposed" style="color:var(--red);">5.5%</strong></div>
+              <div><h4>Hard Limit</h4><strong>6%</strong></div>
+              <div><h4>Remaining Safety Margin</h4><strong id="risk-margin" style="color:var(--red);">0.5%</strong></div>
+              <div><h4>Risk AI Decision</h4><span class="pill red" id="risk-ai-decision">Required</span></div>
+              <div><h4>Human Review</h4><span class="pill red" id="risk-human-review">Required</span></div>
+            </div>
+            <p id="risk-quote" style="font-size:13px;color:#475569;font-style:italic;border-top:1px solid var(--border);padding-top:12px;margin:0;">"The proposal remains within the hard limit but leaves very little safety margin."</p>
+          </div>
+
+          <div class="card" style="margin-bottom:16px;">
+            <h3>Risk Limit Proximity</h3>
+            <div class="stat-row"><span>Novachip Position</span><span class="val">0% - <span id="risk-novachip-pos">5.5%</span></span></div>
+            <div class="bar-track"><div class="bar-fill amber" id="risk-novachip-bar" style="width:92%"></div></div>
+            <div class="stat-row mt8"><span>Semiconductor Exposure</span><span class="val">14% / 19.5%</span></div>
+            <div class="bar-track"><div class="bar-fill green" style="width:72%"></div></div>
+            <div class="stat-row mt8"><span>Concentration Headroom</span><span class="val" id="risk-headroom">0.5% Remaining</span></div>
+            <div class="bar-track"><div class="bar-fill" id="risk-headroom-bar" style="width:92%"></div></div>
+          </div>
+
+          <h3>Human Decision</h3>
+          <div class="card" id="risk-decision-card">
+            <div style="display:flex;gap:10px;">
+              <button class="btn btn-green" style="flex:1;" onclick="approveRisk()">Approve Proposal</button>
+              <button class="btn btn-danger" style="flex:1;" onclick="openBlockModal()" id="block-proposal-btn">Block Proposal</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SCREEN 6: PORTFOLIO TEAM — REVISED PROPOSAL ============ -->
+    <section class="screen" id="screen-portfolio2">
+      <div class="topbar">
+        <div>
+          <h1 class="title">Portfolio Team</h1>
+          <span class="pill green">Portfolio agent : active</span>
+        </div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-value">1,000 cr</div><div class="kpi-label">Portfolio View</div></div>
+        <div class="kpi-card"><div class="kpi-value">70 cr</div><div class="kpi-label">Cash Available</div></div>
+        <div class="kpi-card"><div class="kpi-value">36</div><div class="kpi-label">Active Positions</div></div>
+        <div class="kpi-card"><div class="kpi-value">2</div><div class="kpi-label">New Proposals</div></div>
+        <div class="kpi-card"><div class="kpi-value">68%</div><div class="kpi-label">Tech Exposure</div></div>
+      </div>
+
+      <div class="grid-3" style="grid-template-columns:1.1fr 1.4fr 1fr;">
+        <div>
+          <div class="card" style="margin-bottom:16px;">
+            <h3>Portfolio Allocation</h3>
+            <ul class="list-clean">
+              <li>AI <span class="val">22%</span></li>
+              <li>Semiconductors <span class="val">18%</span></li>
+              <li>Software <span class="val">20%</span></li>
+              <li>Cloud <span class="val">25%</span></li>
+              <li>Cash <span class="val">15%</span></li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Risk Limit Proximity</h3>
+            <div class="stat-row"><span>Largest Position</span><span class="val">5.5% / 6%</span></div>
+            <div class="bar-track"><div class="bar-fill amber" style="width:92%"></div></div>
+            <div class="stat-row mt8"><span>Tech Subsector Exposure</span><span class="val">18% / 25%</span></div>
+            <div class="bar-track"><div class="bar-fill green" style="width:72%"></div></div>
+            <div class="stat-row mt8"><span>Cash Reserve</span><span class="val">7% / 5% Min</span></div>
+            <div class="bar-track"><div class="bar-fill green" style="width:70%"></div></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="card" style="margin-bottom:16px;">
+            <h3>Active Proposal — NovaChip Technologies</h3>
+            <div class="grid-3" style="margin-bottom:0;">
+              <div><h4>Research Recommendation</h4><strong style="color:var(--blue);">Buy</strong></div>
+              <div><h4>Propose Allocation</h4><strong style="color:var(--blue);">5.5%</strong></div>
+              <div><h4>Expected Return</h4><strong>+18%</strong></div>
+              <div><h4>Research Confidence</h4><strong>82%</strong></div>
+              <div><h4>Current Stage</h4><span class="pill amber">Risk Review</span></div>
+            </div>
+            <div class="stage-track" style="margin-bottom:0;">
+              <div class="stage done"><div class="node">✓</div>Research</div>
+              <div class="stage done"><div class="node">✓</div>Portfolio</div>
+              <div class="stage current"><div class="node">!</div>Risk</div>
+              <div class="stage"><div class="node">–</div>Trading</div>
+              <div class="stage"><div class="node">–</div>Operation</div>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Risk Limit Proximity</h3>
+            <div class="stat-row"><span>Largest Position</span><span class="val">0% - 5.5%</span></div>
+            <div class="bar-track"><div class="bar-fill amber" style="width:92%"></div></div>
+            <div class="bar-caption"><span></span><span>6% Hard Limit</span></div>
+            <div class="stat-row mt8"><span>Tech Subsector Exposure</span><span class="val">14% / 19.5%</span></div>
+            <div class="bar-track"><div class="bar-fill green" style="width:72%"></div></div>
+            <div class="stat-row mt8"><span>Cash Reserve</span><span class="val">7% - 1.5%</span></div>
+            <div class="bar-track"><div class="bar-fill red" style="width:30%"></div></div>
+            <div class="bar-caption"><span>5% Minimum Reserve</span><span></span></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="banner red" style="margin-bottom:16px;">
+            <h3>Risk Manager Blocked Proposal</h3>
+            <p style="font-size:13px;color:#7f1d1d;margin:0 0 12px;">Reason: Company concentration is technically within the 6% limit but leaves insufficient safety margin.</p>
+            <ul class="list-clean" style="border-top:1px solid #f3c1c1;padding-top:8px;">
+              <li>Original Allocation <span class="val">5.5%</span></li>
+              <li>Hard Limit <span class="val">6%</span></li>
+              <li>Suggested Safer Allocation <span class="val">4%</span></li>
+            </ul>
+            <p style="font-size:12.5px;color:var(--red);font-weight:700;margin:8px 0 0;">● Blocked — Awaiting Revised Proposal</p>
+          </div>
+
+          <div class="banner green" style="margin-bottom:16px;">
+            <h3>Revised Proposal</h3>
+            <div style="font-size:26px;font-weight:700;color:#15803d;">4%</div>
+            <p class="muted" style="font-size:12px;margin:0 0 10px;">Revised Allocation</p>
+            <ul class="list-clean" style="border-top:1px solid #b6e6c2;padding-top:8px;">
+              <li>Company Concentration <span class="val">4%</span></li>
+              <li>Semiconductor Exposure <span class="val" style="color:var(--green);">Reduced ↓</span></li>
+              <li>Safety Margin <span class="val" style="color:var(--green);">Improved ↑</span></li>
+            </ul>
+            <p style="font-size:12.5px;color:var(--green);font-weight:700;margin:8px 0 0;">● Resubmitted</p>
+          </div>
+
+          <button class="btn btn-primary btn-block" onclick="resubmitToRisk()">Resubmit to Risk</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SCREEN 7: TRADING TEAM ============ -->
+    <section class="screen" id="screen-trading">
+      <div class="topbar">
+        <div>
+          <h1 class="title">Trading Team</h1>
+          <span class="pill green">Trading agent : active</span>
+        </div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-value">1,000 cr</div><div class="kpi-label">Portfolio View</div></div>
+        <div class="kpi-card"><div class="kpi-value">70 cr</div><div class="kpi-label">Cash Available</div></div>
+        <div class="kpi-card"><div class="kpi-value">36</div><div class="kpi-label">Active Positions</div></div>
+        <div class="kpi-card"><div class="kpi-value">2</div><div class="kpi-label">New Proposals</div></div>
+        <div class="kpi-card"><div class="kpi-value">68%</div><div class="kpi-label">Tech Exposure</div></div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3>Active Trade — Novachip Technologies</h3>
+          <div class="grid-3" style="margin-bottom:14px;">
+            <div><h4>Action</h4><strong style="color:var(--blue);">Buy</strong></div>
+            <div><h4>Amount</h4><strong>40cr</strong></div>
+            <div><h4>Allocation</h4><strong>4%</strong></div>
+          </div>
+          <div class="grid-3" style="margin-bottom:0;">
+            <div><h4>Status</h4><span class="pill green">Passed</span></div>
+            <div><h4>Portfolio Approval</h4><span class="pill green">Passed</span></div>
+            <div><h4>Risk Approval</h4><span class="pill green">Passed</span></div>
+          </div>
+          <div class="stage-track" style="margin-bottom:0;">
+            <div class="stage done"><div class="node">✓</div>Research</div>
+            <div class="stage done"><div class="node">✓</div>Portfolio</div>
+            <div class="stage done"><div class="node">✓</div>Risk</div>
+            <div class="stage current"><div class="node">●</div>Trading</div>
+            <div class="stage"><div class="node">–</div>Operation</div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Market conditions</h3>
+          <svg viewBox="0 0 400 100" width="100%" height="80" preserveAspectRatio="none">
+            <polyline points="0,80 60,75 120,60 180,55 240,40 300,30 340,20 400,10" fill="none" stroke="#16a34a" stroke-width="3"/>
+          </svg>
+          <div class="grid-3" style="margin-top:10px;margin-bottom:0;">
+            <div><h4>Status</h4><strong>High</strong></div>
+            <div><h4>Portfolio Approval</h4><strong>Adequate</strong></div>
+            <div><h4>Price Deviation</h4><strong>0.05%</strong></div>
+          </div>
+          <p class="muted" style="font-size:12px;margin-top:10px;">Conditions are favourable for continuing batch execution.</p>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3>Execution Progress</h3>
+          <div class="batches">
+            <div class="batch-chip" id="batch-1">Batch 1</div>
+            <div class="batch-chip" id="batch-2">Batch 2</div>
+            <div class="batch-chip" id="batch-3">Batch 3</div>
+            <div class="batch-chip" id="batch-4">Batch 4</div>
+          </div>
+          <div class="grid-3" style="margin-bottom:0;">
+            <div><h4>Filled</h4><strong id="exec-filled">0 cr</strong></div>
+            <div><h4>Avg Price</h4><strong>1,841.60</strong></div>
+            <div><h4>Current Market Price</h4><strong>1,184.60</strong></div>
+          </div>
+          <div id="exec-done-banner" style="display:none;" class="banner green mt16">
+            <strong style="color:#15803d;">Trade successfully executed</strong>
+          </div>
+          <button class="btn btn-primary btn-block mt16" id="start-execution-btn" onclick="startExecution()">Start Execution</button>
+          <button class="btn btn-green btn-block mt16" id="send-to-ops-btn" style="display:none;" onclick="go('operations'); startOpsAnimation();">Send to Operations</button>
+        </div>
+        <div class="card">
+          <h3>Execution limits</h3>
+          <div class="bar-track" style="height:14px;"><div class="bar-fill green" style="width:60%;display:inline-block;"></div><div class="bar-fill amber" style="width:25%;display:inline-block;"></div><div class="bar-fill red" style="width:15%;display:inline-block;"></div></div>
+          <div class="bar-caption mt8"><span>Safe</span><span>Caution</span><span>Stop</span></div>
+          <div class="mt16">
+            <div class="stat-row"><span>Minimum Liquidity</span><span class="pill green">Under Limit</span></div>
+            <div class="stat-row mt8"><span>Maximum Order Size</span><span class="pill green">Under Limit</span></div>
+          </div>
+          <h4 class="mt16">Trading Agent Strategy</h4>
+          <ul class="list-clean">
+            <li>Selection Venue <span class="val">Primary Exchange</span></li>
+            <li>Price Tolerance <span class="val">2%</span></li>
+            <li>Liquidity <span class="val">Adequate</span></li>
+            <li>Estimated <span class="val">25 Min</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SCREEN 8: OPERATIONS TEAM ============ -->
+    <section class="screen" id="screen-operations">
+      <div class="topbar">
+        <div>
+          <h1 class="title">Operation Team</h1>
+          <span class="pill green">Operation agent : active</span>
+        </div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-value">4</div><div class="kpi-label">Awaiting Settlement</div></div>
+        <div class="kpi-card"><div class="kpi-value">8</div><div class="kpi-label">Reconciled</div></div>
+        <div class="kpi-card"><div class="kpi-value">0</div><div class="kpi-label">Settlement Failure</div></div>
+        <div class="kpi-card"><div class="kpi-value">0</div><div class="kpi-label">Record Mismatches</div></div>
+        <div class="kpi-card"><div class="kpi-value">40 cr</div><div class="kpi-label">Cash Movement Pending</div></div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3>Active Trade — Novachip Technologies</h3>
+          <div class="grid-3" style="margin-bottom:14px;">
+            <div><h4>Action</h4><strong style="color:var(--blue);">Buy</strong></div>
+            <div><h4>Amount</h4><strong>40cr</strong></div>
+            <div><h4>Purchase</h4><strong>396,000</strong></div>
+          </div>
+          <div class="stage-track" style="margin-bottom:0;">
+            <div class="stage done"><div class="node">✓</div>Research</div>
+            <div class="stage done"><div class="node">✓</div>Portfolio</div>
+            <div class="stage done"><div class="node">✓</div>Risk</div>
+            <div class="stage done"><div class="node">✓</div>Trading</div>
+            <div class="stage current" id="ops-stage-node"><div class="node">●</div>Operation</div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Settlement Progress</h3>
+          <p class="muted" style="font-size:13px;" id="ops-progress-text">Trade received. Verifying broker records…</p>
+          <div class="bar-track" style="height:10px;margin-top:14px;"><div class="bar-fill green" id="ops-progress-bar" style="width:0%;"></div></div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3>Reconciliation overview</h3>
+          <ul class="list-clean" id="ops-recon-list">
+            <li>Trading System — 327,000 — 10cr <span class="pill gray" id="recon-1">Pending</span></li>
+            <li>Broker — 327,000 — 11cr <span class="pill gray" id="recon-2">Pending</span></li>
+            <li>Custodian — 327,000 — 14cr <span class="pill gray" id="recon-3">Pending</span></li>
+            <li>Internal Records — 327,000 — 10cr <span class="pill gray" id="recon-4">Pending</span></li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Cash &amp; Asset Movement</h3>
+          <div class="flow-node"><span>Fund Cash → Broker (40cr)</span><span class="flow-status" id="flow-1">Pending</span></div>
+          <div class="flow-node"><span>NovaChip Shares → Custodian → Fund Portfolio</span><span class="flow-status" id="flow-2">Pending</span></div>
+        </div>
+      </div>
+
+      <div id="ops-final" style="display:none;">
+        <div class="banner green mt16">
+          <h3>Trade Successfully Settled</h3>
+          <div class="chips-wrap">
+            <div class="chip">Reconciled</div>
+            <div class="chip">Cash transferred</div>
+            <div class="chip">Shares Received</div>
+            <div class="chip">Portfolio updated</div>
+            <div class="chip">Accounting Records Updated</div>
+          </div>
+        </div>
+        <div class="card mt16">
+          <div class="flex-between">
+            <strong style="color:var(--green);">No Attention Required</strong>
+            <button class="btn btn-primary" onclick="returnToOverview()">Return to Fund Overview</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<!-- LAUNCH MODAL -->
+<div class="modal-overlay" id="launch-modal">
+  <div class="modal">
+    <h2>Launch Alpha Horizon Fund?</h2>
+    <p>All AI teams will begin operating within the configured governance boundaries.</p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('launch-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmLaunch()">Launch Fund</button>
+    </div>
+  </div>
+</div>
+
+<!-- BLOCK MODAL -->
+<div class="modal-overlay" id="block-modal">
+  <div class="modal">
+    <h2>Block NovaChip Proposal</h2>
+    <p>Position concentration is too close to the maximum allowed limit.</p>
+    <div class="reason-box">Insufficient safety margin.</div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('block-modal')">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmBlock()">Confirm Block</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <div class="t1" id="toast-t1"></div>
+  <div class="t2" id="toast-t2"></div>
+</div>
+
+<script>
+/* ---------------- SIDEBAR TEMPLATES ---------------- */
+const logoSvg = `<svg width="30" height="30" viewBox="0 0 40 40"><polygon points="20,4 36,34 4,34" fill="none" stroke="#1e3a8a" stroke-width="3"/><polygon points="20,14 28,30 12,30" fill="#1e3a8a"/></svg>`;
+
+function fundSidebar(activeKey){
+  const items = [
+    {key:'overview', label:'Overview', icon:'⌕'},
+    {key:'decisions', label:'Active Decisions', icon:'⚡'},
+    {key:'agents', label:'Agents', icon:'◎'},
+    {key:'alerts', label:'Alerts', icon:'🔔'},
+    {key:'history', label:'History', icon:'⏱'},
+    {key:'governance', label:'Governance', icon:'🛡'}
+  ];
+  return sidebarHTML(items, activeKey, true);
+}
+function teamSidebar(activeKey){
+  const items = [
+    {key:'overview', label:'Overview', icon:'⌕'},
+    {key:'decisions', label:'Active Decisions', icon:'⚡'},
+    {key:'agents', label:'Agents', icon:'◎'},
+    {key:'alerts', label:'Alerts', icon:'🔔'},
+    {key:'governance', label:'Governance', icon:'🛡'}
+  ];
+  return sidebarHTML(items, activeKey, false);
+}
+function sidebarHTML(items, activeKey, showFooterExtra){
+  let lis = items.map(it=>{
+    const cls = it.key===activeKey ? 'active' : '';
+    const onclick = it.key==='governance' ? "go('governance')" : (it.key==='overview' ? "go('overview')" : "void(0)");
+    return `<li><a class="${cls}" onclick="${onclick}"><span class="icon">${it.icon}</span>${it.label}</a></li>`;
+  }).join('');
+  return `
+    <div class="sidebar">
+      <div class="sidebar-inner">
+        <div class="brand">${logoSvg}<div><div class="brand-name">Alpha Horizon</div><div class="brand-sub">AI Fund Console</div></div></div>
+        <ul class="nav">${lis}</ul>
+        <div class="sidebar-footer"><strong>M. Whitfield</strong>Fund Manager</div>
+      </div>
+    </div>`;
+}
+
+/* ---------------- NAVIGATION ---------------- */
+const screenSidebar = {
+  overview: ()=>fundSidebar('overview'),
+  governance: ()=>fundSidebar('governance'),
+  research: ()=>teamSidebar('overview'),
+  portfolio1: ()=>teamSidebar('overview'),
+  risk1: ()=>teamSidebar('overview'),
+  portfolio2: ()=>teamSidebar('overview'),
+  risk2: ()=>teamSidebar('overview'),
+  trading: ()=>teamSidebar('overview'),
+  operations: ()=>teamSidebar('overview'),
+};
+
+const screenElementId = {
+  overview: 'screen-overview',
+  governance: 'screen-governance',
+  research: 'screen-research',
+  portfolio1: 'screen-portfolio1',
+  risk1: 'screen-risk',
+  portfolio2: 'screen-portfolio2',
+  risk2: 'screen-risk',
+  trading: 'screen-trading',
+  operations: 'screen-operations',
+};
+
+function go(name){
+  // render sidebar
+  document.getElementById('sidebar-slot').innerHTML = screenSidebar[name] ? screenSidebar[name]() : fundSidebar('overview');
+  // hide all screens
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('visible'));
+  const elId = screenElementId[name];
+  document.getElementById(elId).classList.add('visible');
+  if(name==='risk1'){ setupRisk1(); }
+  if(name==='risk2'){ setupRisk2(); }
+  window.scrollTo(0,0);
+  document.getElementById('main-slot').scrollTo(0,0);
+}
+
+/* ---------------- TOAST ---------------- */
+function showToast(t1, t2, duration=1600){
+  const toast = document.getElementById('toast');
+  document.getElementById('toast-t1').textContent = t1;
+  document.getElementById('toast-t2').textContent = t2 || '';
+  toast.classList.add('show');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(()=>{ toast.classList.remove('show'); }, duration);
+}
+
+/* ---------------- MODALS ---------------- */
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+
+function openLaunchModal(){ openModal('launch-modal'); }
+function confirmLaunch(){
+  closeModal('launch-modal');
+  showToast('Fund successfully launched', 'AI agents are now active', 1800);
+  setTimeout(()=>{ go('research'); }, 1000);
+}
+
+/* ---------------- SCREEN 3: RESEARCH ---------------- */
+function sendToPortfolio(){
+  showToast('Opportunity sent to Portfolio Agent', '', 1400);
+  setTimeout(()=>{ go('portfolio1'); }, 900);
+}
+
+/* ---------------- SCREEN 4: PORTFOLIO (5.5%) ---------------- */
+function sendToRisk(){
+  go('risk1');
+}
+
+/* ---------------- SCREEN 5 / 5B: RISK ---------------- */
+function setupRisk1(){
+  document.getElementById('risk-kpis').innerHTML = `
+    <div class="kpi-card"><div class="kpi-value">3</div><div class="kpi-label">Open Risk Review</div></div>
+    <div class="kpi-card"><div class="kpi-value">1</div><div class="kpi-label">Caution Alerts</div></div>
+    <div class="kpi-card"><div class="kpi-value">0</div><div class="kpi-label">Hard Limit Breaches</div></div>
+    <div class="kpi-card"><div class="kpi-value">Moderate</div><div class="kpi-label">Portfolio Risk Level</div></div>
+    <div class="kpi-card"><div class="kpi-value">12</div><div class="kpi-label">Stress Test Run</div></div>`;
+  document.getElementById('risk-panel-title').textContent = 'Caution — Company Concentration Near Limit';
+  document.getElementById('risk-largest-val').textContent = '5.5% / 6%';
+  document.getElementById('risk-largest-bar').className = 'bar-fill amber';
+  document.getElementById('risk-largest-bar').style.width = '92%';
+  document.getElementById('risk-tech-val').textContent = '19.5% / 25%';
+  document.getElementById('risk-cash-val').textContent = '1.5% / 5%';
+  document.getElementById('risk-proposed').textContent = '5.5%';
+  document.getElementById('risk-proposed').style.color = 'var(--red)';
+  document.getElementById('risk-margin').textContent = '0.5%';
+  document.getElementById('risk-margin').style.color = 'var(--red)';
+  document.getElementById('risk-ai-decision').textContent = 'Required';
+  document.getElementById('risk-ai-decision').className = 'pill red';
+  document.getElementById('risk-human-review').textContent = 'Required';
+  document.getElementById('risk-human-review').className = 'pill red';
+  document.getElementById('risk-quote').textContent = '"The proposal remains within the hard limit but leaves very little safety margin."';
+  document.getElementById('risk-novachip-pos').textContent = '5.5%';
+  document.getElementById('risk-novachip-bar').className = 'bar-fill amber';
+  document.getElementById('risk-novachip-bar').style.width = '92%';
+  document.getElementById('risk-headroom').textContent = '0.5% Remaining';
+  document.getElementById('risk-headroom-bar').className = 'bar-fill amber';
+  document.getElementById('risk-headroom-bar').style.width = '92%';
+  document.getElementById('risk-key-evidence').innerHTML = `
+    <div class="evidence-row"><span><span class="evidence-dot" style="background:var(--green);display:inline-block;"></span> Company Limit</span><span style="color:var(--green);font-weight:600;">Under Limit</span></div>
+    <div class="evidence-row"><span><span class="evidence-dot" style="background:var(--green);display:inline-block;"></span> Sector Limit</span><span style="color:var(--green);font-weight:600;">Under limit</span></div>
+    <div class="evidence-row"><span><span class="evidence-dot" style="background:var(--green);display:inline-block;"></span> Stress Test</span><span style="color:var(--green);font-weight:600;">Passed</span></div>
+    <div class="evidence-row"><span><span class="evidence-dot" style="background:var(--green);display:inline-block;"></span> Liquidity</span><span style="color:var(--green);font-weight:600;">Acceptable</span></div>
+    <div class="evidence-row"><span><span class="evidence-dot" style="background:var(--amber);display:inline-block;"></span> Concentration</span><span style="color:var(--amber);font-weight:600;">Near threshold</span></div>`;
+  document.getElementById('risk-decision-card').innerHTML = `
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-green" style="flex:1;" onclick="approveRisk()">Approve Proposal</button>
+      <button class="btn btn-danger" style="flex:1;" onclick="openBlockModal()">Block Proposal</button>
+    </div>`;
+}
+
+function setupRisk2(){
+  document.getElementById('risk-kpis').innerHTML = `
+    <div class="kpi-card"><div class="kpi-value">2</div><div class="kpi-label">Open Risk Review</div></div>
+    <div class="kpi-card"><div class="kpi-value">0</div><div class="kpi-label">Caution Alerts</div></div>
+    <div class="kpi-card"><div class="kpi-value">0</div><div class="kpi-label">Hard Limit Breaches</div></div>
+    <div class="kpi-card"><div class="kpi-value">Moderate</div><div class="kpi-label">Portfolio Risk Level</div></div>
+    <div class="kpi-card"><div class="kpi-value">13</div><div class="kpi-label">Stress Test Run</div></div>`;
+  document.getElementById('risk-panel-title').textContent = 'Within Risk Limits — Revised Proposal';
+  document.getElementById('risk-largest-val').textContent = '4% / 6%';
+  document.getElementById('risk-largest-bar').className = 'bar-fill green';
+  document.getElementById('risk-largest-bar').style.width = '66%';
+  document.getElementById('risk-tech-val').textContent = '17% / 25%';
+  document.getElementById('risk-cash-val').textContent = '3% / 5%';
+  document.getElementById('risk-proposed').textContent = '4%';
+  document.getElementById('risk-proposed').style.color = 'var(--green)';
+  document.getElementById('risk-margin').textContent = '2%';
+  document.getElementById('risk-margin').style.color = 'var(--green)';
+  document.getElementById('risk-ai-decision').textContent = 'Approved';
+  document.getElementById('risk-ai-decision').className = 'pill green';
+  document.getElementById('risk-human-review').textContent = 'Earlier concern resolved';
+  document.getElementById('risk-human-review').className = 'pill green';
+  document.getElementById('risk-quote').textContent = '"The revised 4% allocation is comfortably within the hard limit with a healthy safety margin."';
+  document.getElementById('risk-novachip-pos').textContent = '4%';
+  document.getElementById('risk-novachip-bar').className = 'bar-fill green';
+  document.getElementById('risk-novachip-bar').style.width = '66%';
+  document.getElementById('risk-headroom').textContent = '2% Remaining';
+  document.getElementById('risk-headroom-bar').className = 'bar-fill green';
+  document.getElementById('risk-headroom-bar').style.width = '66%';
+  document.getElementById('risk-key-evidence').innerHTML = `
+    <div class="evidence-row"><span><span class="evidence-dot" style="background:var(--green);display:inline-block;"></span> Company Limit</span><span style="color:var(--green);font-weight:600;">Passed</span></div>
+    <div class="evidence-row"><span><span class="evidence-dot" style="background:var(--green);display:inline-block;"></span> Sector Limit</span><span style="color:var(--green);font-weight:600;">Passed</span></div>
+    <div class="evidence-row"><span><span class="evidence-dot" style="background:var(--green);display:inline-block;"></span> Stress Test</span><span style="color:var(--green);font-weight:600;">Passed</span></div>
+    <div class="evidence-row"><span><span class="evidence-dot" style="background:var(--green);display:inline-block;"></span> Liquidity</span><span style="color:var(--green);font-weight:600;">Acceptable</span></div>
+    <div class="evidence-row"><span><span class="evidence-dot" style="background:var(--green);display:inline-block;"></span> Concentration</span><span style="color:var(--green);font-weight:600;">Safely within limit</span></div>`;
+  document.getElementById('risk-decision-card').innerHTML = `
+    <button class="btn btn-green btn-block" onclick="approveContinue()">Approve &amp; Continue</button>`;
+}
+
+function openBlockModal(){ openModal('block-modal'); }
+function confirmBlock(){
+  closeModal('block-modal');
+  showToast('Proposal blocked', 'Sent back to Portfolio Agent for revision', 1800);
+  setTimeout(()=>{ go('portfolio2'); }, 1000);
+}
+function approveRisk(){
+  showToast('Proposal approved', 'Sent to Trading', 1400);
+  setTimeout(()=>{ go('trading'); }, 900);
+}
+function approveContinue(){
+  showToast('Risk check passed', 'Sent to Trading', 1400);
+  setTimeout(()=>{ go('trading'); }, 900);
+}
+
+/* ---------------- SCREEN 6: PORTFOLIO REVISED ---------------- */
+function resubmitToRisk(){
+  go('risk2');
+}
+
+/* ---------------- SCREEN 7: TRADING ---------------- */
+function startExecution(){
+  const btn = document.getElementById('start-execution-btn');
+  btn.disabled = true;
+  btn.textContent = 'Executing…';
+  const batches = ['batch-1','batch-2','batch-3','batch-4'];
+  const fills = [10,10,11,9];
+  let total = 0;
+  let i = 0;
+  const interval = setInterval(()=>{
+    if(i >= batches.length){
+      clearInterval(interval);
+      document.getElementById('exec-done-banner').style.display = 'block';
+      btn.style.display = 'none';
+      document.getElementById('send-to-ops-btn').style.display = 'inline-block';
+      return;
+    }
+    document.getElementById(batches[i]).classList.add('done');
+    total += fills[i];
+    document.getElementById('exec-filled').textContent = total + ' cr';
+    i++;
+  }, 700);
+}
+
+/* ---------------- SCREEN 8: OPERATIONS ---------------- */
+function startOpsAnimation(){
+  // reset
+  ['recon-1','recon-2','recon-3','recon-4'].forEach(id=>{
+    const el = document.getElementById(id);
+    el.textContent = 'Pending'; el.className = 'pill gray';
+  });
+  ['flow-1','flow-2'].forEach(id=>{
+    const el = document.getElementById(id);
+    el.textContent = 'Pending'; el.className = 'flow-status';
+  });
+  document.getElementById('ops-progress-bar').style.width = '0%';
+  document.getElementById('ops-final').style.display = 'none';
+  document.querySelectorAll('#ops-final .chip').forEach(c=>c.classList.remove('show'));
+
+  const steps = [
+    {progress:20, text:'Trade received. Verifying broker records…', action:()=>{ setPill('recon-1','Matched'); }},
+    {progress:40, text:'Broker records matched. Verifying cash…', action:()=>{ setPill('recon-2','Matched'); setFlow('flow-1','Transited'); }},
+    {progress:60, text:'Cash verified. Verifying shares…', action:()=>{ setPill('recon-3','Matched'); setFlow('flow-2','Transited'); }},
+    {progress:80, text:'Shares verified. Reconciling…', action:()=>{ setPill('recon-4','Matched'); }},
+    {progress:100, text:'Settlement confirmed.', action:()=>{ finishOps(); }},
+  ];
+  let i = 0;
+  const interval = setInterval(()=>{
+    if(i >= steps.length){ clearInterval(interval); return; }
+    const s = steps[i];
+    document.getElementById('ops-progress-bar').style.width = s.progress + '%';
+    document.getElementById('ops-progress-text').textContent = s.text;
+    s.action();
+    i++;
+  }, 700);
+}
+function setPill(id, text){
+  const el = document.getElementById(id);
+  el.textContent = text; el.className = 'pill green';
+}
+function setFlow(id, text){
+  const el = document.getElementById(id);
+  el.textContent = text; el.className = 'flow-status done';
+}
+function finishOps(){
+  document.getElementById('ops-final').style.display = 'block';
+  setTimeout(()=>{
+    document.querySelectorAll('#ops-final .chip').forEach((c,idx)=>{
+      setTimeout(()=>c.classList.add('show'), idx*120);
+    });
+  }, 100);
+}
+function returnToOverview(){
+  go('overview');
+}
+
+/* ---------------- INIT ---------------- */
+go('overview');
+</script>
+</body>
+</html>
